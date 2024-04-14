@@ -136,4 +136,13 @@ class DefinitionTest extends TestCase
         $definition->setConcrete($concrete);
         $this->assertSame($concrete, $definition->getConcrete());
     }
+
+    public function testNonExistentClassResolvesAsString(): void
+    {
+        $nonClass = NonExistent::class;
+        $definition = new Definition($nonClass);
+
+        self::assertSame($nonClass, $definition->getAlias());
+        self::assertSame($nonClass, $definition->resolve());
+    }
 }

@@ -21,7 +21,6 @@ class Definition implements ArgumentResolverInterface, DefinitionInterface
     use ContainerAwareTrait;
 
     protected mixed $resolved = null;
-    protected array $recursiveCheck = [];
 
     public function __construct(
         protected string $id,
@@ -149,8 +148,12 @@ class Definition implements ArgumentResolverInterface, DefinitionInterface
             $concrete = $concrete->getValue();
         }
 
-        if (is_string($concrete) && class_exists($concrete)) {
-            $concrete = $this->resolveClass($concrete);
+        if (is_string($concrete)) {
+            if (class_exists($concrete)) {
+                $concrete = $this->resolveClass($concrete);
+            } elseif ($this->getAlias() === $concrete) {
+                return $concrete;
+            }
         }
 
         if (is_object($concrete)) {
@@ -163,16 +166,9 @@ class Definition implements ArgumentResolverInterface, DefinitionInterface
             $container = null;
         }
 
-        // stop recursive resolving
-        if (is_string($concrete) && in_array($concrete, $this->recursiveCheck)) {
-            $this->resolved = $concrete;
-            return $concrete;
-        }
-
         // if we still have a string, try to pull it from the container
         // this allows for `alias -> alias -> ... -> concrete
         if (is_string($concrete) && $container instanceof ContainerInterface && $container->has($concrete)) {
-            $this->recursiveCheck[] = $concrete;
             $concrete = $container->get($concrete);
         }
 
